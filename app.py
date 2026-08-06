@@ -139,35 +139,18 @@ with st.sidebar:
 
 
 # Main Content Area
-st.markdown("<h1 class='main-title'>Executive Lead Researcher</h1>", unsafe_allow_html=True)
-st.markdown("<p class='main-subtitle'>Perform automatic deep-web intelligence research on any lead using Search, Crawl4ai/Playwright, and Gemini synthesis.</p>", unsafe_allow_html=True)
+st.markdown("<h1 class='main-title'>Lead Intelligence Researcher</h1>", unsafe_allow_html=True)
+st.markdown("<p class='main-subtitle'>Search, scrape, and compile public web intelligence into a professional PDF dossier.</p>", unsafe_allow_html=True)
 
-# Two-column layout: Form vs instructions
-col1, col2 = st.columns([3, 2])
-
-with col1:
-    st.markdown("### 🔍 Research Request Details")
-    
-    with st.form("research_form"):
-        r_col1, r_col2 = st.columns(2)
-        with r_col1:
-            lead_username = st.text_input("Lead Username or LinkedIn URL*", placeholder="e.g. alex-mercer or https://www.linkedin.com/in/...")
-        with r_col2:
-            lead_email = st.text_input("Lead Email Address*", placeholder="e.g. alex@techvanguard.ai")
-            
-        submitted = st.form_submit_button("Launch Research Pipeline")
-
-with col2:
-    st.markdown("""
-    ### 💡 Guide
-    1. **Username or LinkedIn URL** is required to locate the target.
-    2. The **email address** is used to cross-reference search results and locate company associations.
-    3. The pipeline will:
-       - Scrape the target profile (via Scraper API / Mock Mode).
-       - Automatically resolve their Full Name and Current Company.
-       - Execute search crawls for supplementary records.
-       - Synthesize a detailed, downloadable PDF dossier.
-    """)
+# Centered research request form
+with st.form("research_form"):
+    r_col1, r_col2 = st.columns(2)
+    with r_col1:
+        lead_username = st.text_input("LinkedIn Username or Profile URL*", placeholder="e.g. alex-mercer or https://www.linkedin.com/in/...")
+    with r_col2:
+        lead_email = st.text_input("Lead Email Address*", placeholder="e.g. alex@techvanguard.ai")
+        
+    submitted = st.form_submit_button("Generate Intelligence PDF")
 
 # If form is submitted, launch research pipeline
 if submitted:
@@ -209,85 +192,34 @@ if submitted:
                 st.session_state.pdf_filename = pdf_filename
                 st.session_state.pdf_ready = True
                 
-                status.update(label="Research Complete! Check the dashboard below.", state="complete", expanded=False)
+                status.update(label="Research Complete! Check the dossier below.", state="complete", expanded=False)
                 
             except Exception as e:
                 status.update(label=f"Pipeline error: {str(e)}", state="error")
                 st.exception(e)
 
-# Render results dashboard if ready
-if st.session_state.research_results:
-    res = st.session_state.research_results
-    
+# Render results and PDF viewer if ready
+if st.session_state.pdf_ready:
     st.markdown("---")
     
-    # Action bar (e.g. download PDF button)
-    d_col1, d_col2 = st.columns([3, 1])
-    with d_col1:
-        st.markdown(f"## 📋 Executive Dossier: {res.get('lead_name')}")
-    with d_col2:
-        if st.session_state.pdf_ready:
-            with open(st.session_state.pdf_path, "rb") as f:
-                pdf_bytes = f.read()
-            st.download_button(
-                label="📥 Download PDF Intelligence Report",
-                data=pdf_bytes,
-                file_name=st.session_state.pdf_filename,
-                mime="application/pdf",
-                use_container_width=True
-            )
-            
-    # Tabs for displaying parts of the parsed data beautifully
-    t_summary, t_experience, t_company, t_web = st.tabs([
-        "👤 Professional Summary", 
-        "💼 Experience History", 
-        "🏢 Company Profile", 
-        "🌐 Web Insights"
-    ])
+    # Download Button
+    with open(st.session_state.pdf_path, "rb") as f:
+        pdf_bytes = f.read()
     
-    with t_summary:
-        col_avatar, col_sum = st.columns([1, 4])
-        with col_avatar:
-            st.image("https://img.icons8.com/color/144/user-male-circle--v1.png")
-        with col_sum:
-            st.markdown(f"#### {res.get('lead_name')}")
-            st.info(res.get("summary"))
-            
-            st.markdown("##### Key Professional Skills")
-            skills_html = "".join([f"<span class='skill-badge'>{skill}</span>" for skill in res.get("skills", [])])
-            st.markdown(skills_html, unsafe_allow_html=True)
-            
-            # Key Details block
-            st.markdown("##### Contact & Routing Details")
-            st.markdown(f"**Email:** {res.get('lead_email', 'N/A')} | **LinkedIn:** {res.get('linkedin_url', 'N/A')}")
-            
-    with t_experience:
-        st.markdown("#### Professional Timeline")
-        for exp in res.get("experience", []):
-            with st.container():
-                st.markdown(f"**{exp.get('title')}** at **{exp.get('company')}**")
-                st.caption(f"🗓️ {exp.get('period')}")
-                st.markdown(f"{exp.get('description')}")
-                st.markdown("<hr style='margin: 10px 0; border-top: 1px solid rgba(255,255,255,0.05);'>", unsafe_allow_html=True)
-                
-    with t_company:
-        comp = res.get("company_details", {})
-        st.markdown(f"#### {comp.get('name', 'Company Details')}")
-        
-        # Meta cards
-        mc1, mc2, mc3 = st.columns(3)
-        with mc1:
-            st.metric(label="Industry", value=comp.get("industry", "N/A"))
-        with mc2:
-            st.metric(label="Company Size", value=comp.get("size", "N/A"))
-        with mc3:
-            st.metric(label="Website", value=comp.get("website", "N/A"))
-            
-        st.markdown("##### About the Organization")
-        st.markdown(comp.get("description", "No company description found."))
-        
-    with t_web:
-        st.markdown("#### Supplementary Search Engine Insights")
-        st.markdown("The following records were index-matched and extracted from secondary sources:")
-        for insight in res.get("web_insights", []):
-            st.markdown(f"- {insight}")
+    st.download_button(
+        label="📥 Download PDF Intelligence Report",
+        data=pdf_bytes,
+        file_name=st.session_state.pdf_filename,
+        mime="application/pdf",
+        use_container_width=True
+    )
+    
+    # PDF Iframe Preview
+    import base64
+    try:
+        base64_pdf = base64.b64encode(pdf_bytes).decode('utf-8')
+        pdf_display = f'<iframe src="data:application/pdf;base64,{base64_pdf}" width="100%" height="800" style="border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; margin-top: 15px;"></iframe>'
+        st.markdown(pdf_display, unsafe_allow_html=True)
+    except Exception as e:
+        st.warning("Could not render inline PDF preview in this browser session. Please download using the button above.")
+
