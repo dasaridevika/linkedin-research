@@ -131,8 +131,7 @@ def _synthesize_with_worker_ai(lead_username: str, lead_email: str, context: dic
     """
     worker_url = get_config("CLOUDFLARE_WORKER_URL")
     if not worker_url:
-        logger.warning("Cloudflare Worker URL not configured. Returning fallback report.")
-        return _generate_fallback_report(lead_username, lead_email, context)
+        raise ValueError("CLOUDFLARE_WORKER_URL is not configured in your Railway environment variables.")
 
     try:
         payload = {
@@ -147,12 +146,11 @@ def _synthesize_with_worker_ai(lead_username: str, lead_email: str, context: dic
         if response.status_code == 200:
             return response.json()
         else:
-            logger.error(f"Cloudflare Workers AI returned status {response.status_code}: {response.text}")
-            return _generate_fallback_report(lead_username, lead_email, context)
+            raise RuntimeError(f"Cloudflare Worker returned error {response.status_code}: {response.text}")
             
     except Exception as e:
-        logger.error(f"Cloudflare Workers AI synthesis call failed: {str(e)}. Using fallback parsing.")
-        return _generate_fallback_report(lead_username, lead_email, context)
+        logger.error(f"Cloudflare Workers AI synthesis call failed: {str(e)}")
+        raise e
 
 def _generate_fallback_report(lead_username: str, lead_email: str, context: dict) -> dict:
     """
