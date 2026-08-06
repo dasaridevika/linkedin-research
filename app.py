@@ -106,18 +106,13 @@ st.markdown("<p class='main-subtitle'>Search, scrape, and compile public web int
 
 # Centered research request form
 with st.form("research_form"):
-    r_col1, r_col2 = st.columns(2)
-    with r_col1:
-        lead_username = st.text_input("LinkedIn Username or Profile URL*", placeholder="e.g. alex-mercer or https://www.linkedin.com/in/...")
-    with r_col2:
-        lead_email = st.text_input("Lead Email Address*", placeholder="e.g. alex@techvanguard.ai")
-        
+    lead_username = st.text_input("LinkedIn Username or Profile URL*", placeholder="e.g. alex-mercer or https://www.linkedin.com/in/...")
     submitted = st.form_submit_button("Generate Intelligence PDF")
 
 # If form is submitted, launch research pipeline
 if submitted:
-    if not lead_username or not lead_email:
-        st.error("Missing fields: Username and Email are required.")
+    if not lead_username:
+        st.error("Missing fields: Username is required.")
     elif not gemini_key:
         st.error("Please configure the GEMINI_API_KEY variable in your Railway dashboard to generate reports.")
     elif not tavily_key and not serper_key:
@@ -134,7 +129,7 @@ if submitted:
                 status.write("Fetching profile & resolving identity...")
                 results = perform_full_research(
                     lead_username=lead_username,
-                    lead_email=lead_email
+                    lead_email=""
                 )
                 
                 # Stage 2
