@@ -57,6 +57,7 @@ Create a `.env` file in the root directory:
 ```env
 GEMINI_API_KEY=your-gemini-api-key
 CLOUDFLARE_WORKER_URL=https://your-worker-url.workers.dev
+APIFY_TOKEN=your-apify-token  # Optional: For active LinkedIn scraping (Free $5/month)
 ```
 
 ### Launch
@@ -80,4 +81,5 @@ This app deploys as a **single service** containing both the Streamlit UI and th
 3. **Configure Railway Variables**:
    - `GEMINI_API_KEY`
    - `CLOUDFLARE_WORKER_URL`
+   - `APIFY_TOKEN` (Optional: Enables profile scraping)
    - `PORT` (Provided by Railway automatically)

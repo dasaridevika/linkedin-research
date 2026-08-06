@@ -91,7 +91,8 @@ if "api_keys" not in st.session_state:
         "GEMINI_API_KEY": os.getenv("GEMINI_API_KEY", ""),
         "TAVILY_API_KEY": os.getenv("TAVILY_API_KEY", ""),
         "SERPER_API_KEY": os.getenv("SERPER_API_KEY", ""),
-        "CLOUDFLARE_WORKER_URL": os.getenv("CLOUDFLARE_WORKER_URL", "")
+        "CLOUDFLARE_WORKER_URL": os.getenv("CLOUDFLARE_WORKER_URL", ""),
+        "APIFY_TOKEN": os.getenv("APIFY_TOKEN", "")
     }
 
 if "research_results" not in st.session_state:
@@ -129,6 +130,15 @@ with st.sidebar:
     )
 
     st.markdown("---")
+    st.markdown("### Apify Scraper Settings")
+    st.session_state.api_keys["APIFY_TOKEN"] = st.text_input(
+        "Apify API Token (Free Tier)",
+        value=st.session_state.api_keys["APIFY_TOKEN"],
+        type="password",
+        help="Get a free token on apify.com (includes $5 free monthly credits). Enables professional LinkedIn profile scraping."
+    )
+
+    st.markdown("---")
     st.markdown("### Cloudflare Worker Settings")
     st.session_state.api_keys["CLOUDFLARE_WORKER_URL"] = st.text_input(
         "Cloudflare Worker URL",
@@ -138,7 +148,7 @@ with st.sidebar:
     )
 
     st.markdown("---")
-    st.markdown("<small style='color: #718096;'>Lead Researcher v2.0.0<br>Cloudflare & Crawl4ai Stack</small>", unsafe_allow_html=True)
+    st.markdown("<small style='color: #718096;'>Lead Researcher v2.1.0<br>Cloudflare, Apify & Crawl4ai Stack</small>", unsafe_allow_html=True)
 
 
 # Main Content Area

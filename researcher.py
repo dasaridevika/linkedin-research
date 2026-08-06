@@ -62,7 +62,41 @@ def perform_full_research(lead_username: str, lead_email: str) -> dict:
                 search_query_2 = f'"{lead_username}" "{domain.split(".")[0]}"'
                 search_hits.extend(web_search(search_query_2, max_results=3))
 
-    # 3. Crawl webpages using Playwright/Crawl4ai
+    # 3. Locate LinkedIn URL and scrape via Apify if token exists
+    apify_token = get_config("APIFY_TOKEN")
+    linkedin_url = ""
+    raw_linkedin_profile = {}
+
+    if apify_token:
+        # Determine LinkedIn URL from input or search hits
+        if "linkedin.com/in/" in lead_username:
+            linkedin_url = lead_username
+        else:
+            # Look in search hits first
+            for hit in search_hits:
+                hit_url = hit.get("url") or hit.get("link") or ""
+                if "linkedin.com/in/" in hit_url:
+                    linkedin_url = hit_url
+                    break
+            
+            # Heuristic fallback if not found in hits
+            if not linkedin_url:
+                clean_username = lead_username.strip().strip("/")
+                linkedin_url = f"https://www.linkedin.com/in/{clean_username}"
+
+        try:
+            logger.info(f"Triggering Apify scraper for: {linkedin_url}")
+            from linkedin_apify import scrape_profile_apify
+            profile_data = scrape_profile_apify(linkedin_url, apify_token)
+            if profile_data and "error" not in profile_data:
+                raw_linkedin_profile = profile_data
+                logger.info("Successfully fetched and resolved LinkedIn profile via Apify.")
+            else:
+                logger.warning(f"Apify returned empty or error profile data: {profile_data}")
+        except Exception as e:
+            logger.error(f"Apify profile scraping execution failed: {str(e)}")
+
+    # 4. Crawl other non-LinkedIn webpages using Playwright/Crawl4ai
     crawled_pages = []
     candidate_urls = []
     for hit in search_hits:
@@ -83,10 +117,11 @@ def perform_full_research(lead_username: str, lead_email: str) -> dict:
         except Exception as e:
             logger.error(f"Failed to crawl {url}: {str(e)}")
 
-    # 4. Synthesize with Gemini
+    # 5. Synthesize with Gemini
     research_context = {
         "search_hits": search_hits,
-        "crawled_pages": crawled_pages
+        "crawled_pages": crawled_pages,
+        "raw_linkedin_profile": raw_linkedin_profile
     }
 
     return _synthesize_with_gemini(lead_username, lead_email, research_context)
