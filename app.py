@@ -94,7 +94,6 @@ if "pdf_ready" not in st.session_state:
 
 # Read environment variables directly
 import os
-gemini_key = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
 tavily_key = os.getenv("TAVILY_API_KEY")
 serper_key = os.getenv("SERPER_API_KEY")
 apify_token = os.getenv("APIFY_TOKEN")
@@ -118,8 +117,6 @@ with st.form("research_form"):
 if submitted:
     if not lead_username or not lead_email:
         st.error("Missing fields: Username and Email are required.")
-    elif not gemini_key:
-        st.error("Please configure the GEMINI_API_KEY variable in your Railway dashboard to generate reports.")
     elif not tavily_key and not serper_key:
         st.error("Please configure a web search API variable (TAVILY_API_KEY or SERPER_API_KEY) in your Railway dashboard.")
     else:

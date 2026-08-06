@@ -1,7 +1,6 @@
 import json
 import logging
 import requests
-import google.generativeai as genai
 from config import get_config
 from crawler import crawl_url_sync
 
@@ -11,7 +10,7 @@ def perform_full_research(lead_username: str, lead_email: str) -> dict:
     """
     Main orchestrator that conducts research based on lead_username and lead_email.
     Queries the Cloudflare Worker to perform web search queries, crawls identified URLs
-    using Crawl4ai/Playwright, and uses Gemini to synthesize the data.
+    using Crawl4ai/Playwright, and uses Cloudflare Workers AI to synthesize the data.
     """
     logger.info(f"Starting research on username: {lead_username}, email: {lead_email}")
 
@@ -117,87 +116,42 @@ def perform_full_research(lead_username: str, lead_email: str) -> dict:
         except Exception as e:
             logger.error(f"Failed to crawl {url}: {str(e)}")
 
-    # 5. Synthesize with Gemini
+    # 5. Synthesize with Cloudflare Workers AI
     research_context = {
         "search_hits": search_hits,
         "crawled_pages": crawled_pages,
         "raw_linkedin_profile": raw_linkedin_profile
     }
 
-    return _synthesize_with_gemini(lead_username, lead_email, research_context)
+    return _synthesize_with_worker_ai(lead_username, lead_email, research_context)
 
-def _synthesize_with_gemini(lead_username: str, lead_email: str, context: dict) -> dict:
+def _synthesize_with_worker_ai(lead_username: str, lead_email: str, context: dict) -> dict:
     """
-    Sends search logs and page content to Gemini to extract name, company, history, and insights.
+    Sends search logs and page content to the Cloudflare Worker to synthesize using Workers AI.
     """
-    gemini_key = get_config("GEMINI_API_KEY") or get_config("GOOGLE_API_KEY")
-    if not gemini_key:
-        logger.warning("Gemini API key not found. Returning a basic parsed structure.")
+    worker_url = get_config("CLOUDFLARE_WORKER_URL")
+    if not worker_url:
+        logger.warning("Cloudflare Worker URL not configured. Returning fallback report.")
         return _generate_fallback_report(lead_username, lead_email, context)
 
     try:
-        genai.configure(api_key=gemini_key)
-        model = genai.GenerativeModel("gemini-2.5-flash")
+        payload = {
+            "action": "synthesize",
+            "context": json.dumps(context, indent=2)
+        }
+        headers = {"Content-Type": "application/json"}
         
-        system_prompt = """
-You are an expert sales intelligence assistant. Your job is to analyze search results (titles, snippets, URLs) and crawled webpage texts about a lead (identified by their username and email), resolve their professional details, and compile a structured JSON report.
-
-Your JSON output MUST match this exact schema:
-{
-  "lead_name": "Full name of the lead (resolve from search results/crawled content. Fallback to username)",
-  "lead_email": "Email address of the lead",
-  "company_name": "Name of the company they work at (resolve from search results)",
-  "linkedin_url": "Resolved LinkedIn profile URL (resolve from search results)",
-  "summary": "A 3-5 sentence executive summary of the lead, their professional focus, expertise, and current role.",
-  "skills": ["List of 5-8 key professional skills"],
-  "experience": [
-    {
-      "title": "Job Title",
-      "company": "Company Name",
-      "period": "Start - End Date (e.g., 2021 - Present)",
-      "description": "Short description of responsibilities/accomplishments"
-    }
-  ],
-  "company_details": {
-    "name": "Official Company Name",
-    "website": "Company website URL",
-    "industry": "Industry description",
-    "size": "Estimated company size (e.g. 50-200 employees)",
-    "description": "A detailed 3-4 sentence paragraph about what the company does, its main products/services, and target market."
-  },
-  "web_insights": [
-    "3 to 5 bullet points containing specific insights about the person or company found on the web (e.g. speaking engagements, articles written, GitHub activity, recent company press releases, funding rounds, product launches)."
-  ]
-}
-
-Analyze the search snippets and crawled web pages carefully. Identify the lead's real name (e.g., matching the username or email), their job title, current employer, and details about that employer. 
-Do not invent facts. If certain fields (e.g. experience details, skills) are not present in the context, write a reasonable summary based on the available web search snippets.
-"""
-
-        user_content = f"""
-Target Lead Details:
-- Username: {lead_username}
-- Email: {lead_email}
-
-Context Collected:
-{json.dumps(context, indent=2)}
-
-Synthesize the above context into the requested JSON schema.
-"""
-
-        response = model.generate_content(
-            contents=user_content,
-            generation_config={
-                "response_mime_type": "application/json",
-                "temperature": 0.2
-            },
-            system_instruction=system_prompt
-        )
-
-        return json.loads(response.text)
-
+        logger.info(f"Requesting Cloudflare Workers AI synthesis: {worker_url}")
+        response = requests.post(worker_url, json=payload, headers=headers, timeout=45)
+        
+        if response.status_code == 200:
+            return response.json()
+        else:
+            logger.error(f"Cloudflare Workers AI returned status {response.status_code}: {response.text}")
+            return _generate_fallback_report(lead_username, lead_email, context)
+            
     except Exception as e:
-        logger.error(f"Gemini synthesis failed: {str(e)}. Using fallback parsing.")
+        logger.error(f"Cloudflare Workers AI synthesis call failed: {str(e)}. Using fallback parsing.")
         return _generate_fallback_report(lead_username, lead_email, context)
 
 def _generate_fallback_report(lead_username: str, lead_email: str, context: dict) -> dict:

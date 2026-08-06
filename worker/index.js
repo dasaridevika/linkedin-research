@@ -26,6 +26,94 @@ export default {
 
     try {
       const body = await request.json();
+      const action = body.action || "search";
+
+      // 1. Synthesize Route (Uses Workers AI)
+      if (action === "synthesize") {
+        if (!env.AI) {
+          return new Response(
+            JSON.stringify({ 
+              error: "Workers AI binding (env.AI) is missing in this Cloudflare Worker. Please add the AI binding in your wrangler.toml or Cloudflare Settings." 
+            }), {
+              status: 400,
+              headers: {
+                "Content-Type": "application/json",
+                ...corsHeaders
+              }
+            }
+          );
+        }
+
+        const context = body.context || "";
+        const systemPrompt = `You are a professional lead intelligence researcher. Analyze the gathered web search records, crawled websites, and social media data to construct a comprehensive dossier.
+You MUST output your response in raw JSON format matching the schema below. Do not output any conversational introduction, markdown code blocks, or extra text.
+
+Required JSON Schema:
+{
+  "lead_name": "Lead's full name",
+  "lead_email": "Lead's email address",
+  "company_name": "Lead's current company name",
+  "linkedin_url": "Lead's LinkedIn Profile URL",
+  "summary": "A cohesive executive summary of the lead's professional background, specialties, and background details.",
+  "skills": ["List of up to 8 core skills/competencies"],
+  "experience": [
+    {
+      "title": "Role or Job Title",
+      "company": "Company Name",
+      "period": "Employment Period (e.g., Jan 2021 - Present)",
+      "description": "Short summary of responsibilities, achievements, and impact"
+    }
+  ],
+  "company_details": {
+    "name": "Current company name",
+    "industry": "Company's industry vertical",
+    "size": "Employee size bracket (e.g., 50-200 employees)",
+    "website": "Company website homepage URL",
+    "description": "A comprehensive summary of the company's business model, value proposition, and market position."
+  },
+  "web_insights": [
+    "Supplementary research discovery 1 (e.g., papers published, speaking roles, patents, news mentions)",
+    "Supplementary research discovery 2"
+  ]
+}`;
+
+        const aiResponse = await env.AI.run("@cf/meta/llama-3.1-8b-instruct", {
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: `Here is the gathered context about the lead:\n\n${context}\n\nCompile the JSON lead intelligence dossier:` }
+          ]
+        });
+
+        const modelText = aiResponse.response || "";
+        
+        // Clean and parse JSON from the response text
+        let parsedReport;
+        try {
+          parsedReport = JSON.parse(modelText);
+        } catch (e) {
+          const startIndex = modelText.indexOf('{');
+          const endIndex = modelText.lastIndexOf('}');
+          if (startIndex !== -1 && endIndex !== -1) {
+            try {
+              parsedReport = JSON.parse(modelText.substring(startIndex, endIndex + 1));
+            } catch (innerErr) {
+              throw new Error("Model response was not valid JSON: " + modelText);
+            }
+          } else {
+            throw new Error("Could not locate JSON output block in model response: " + modelText);
+          }
+        }
+
+        return new Response(JSON.stringify(parsedReport), {
+          status: 200,
+          headers: {
+            "Content-Type": "application/json",
+            ...corsHeaders
+          }
+        });
+      }
+
+      // 2. Search Proxy Route (Default)
       const username = body.username || "";
       const email = body.email || "";
 
@@ -54,7 +142,6 @@ export default {
       }
 
       // Build target search queries
-      // Query 1: Find target's identity and LinkedIn profile
       const targetQuery = `${username} ${email} LinkedIn profile`.trim();
       let searchResults = [];
 
