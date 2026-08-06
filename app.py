@@ -86,69 +86,56 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # Initialize Session States
-if "api_keys" not in st.session_state:
-    st.session_state.api_keys = {
-        "GEMINI_API_KEY": os.getenv("GEMINI_API_KEY", ""),
-        "TAVILY_API_KEY": os.getenv("TAVILY_API_KEY", ""),
-        "SERPER_API_KEY": os.getenv("SERPER_API_KEY", ""),
-        "CLOUDFLARE_WORKER_URL": os.getenv("CLOUDFLARE_WORKER_URL", ""),
-        "APIFY_TOKEN": os.getenv("APIFY_TOKEN", "")
-    }
-
 if "research_results" not in st.session_state:
     st.session_state.research_results = None
 
 if "pdf_ready" not in st.session_state:
     st.session_state.pdf_ready = False
 
+# Read environment variables directly
+import os
+gemini_key = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
+tavily_key = os.getenv("TAVILY_API_KEY")
+serper_key = os.getenv("SERPER_API_KEY")
+apify_token = os.getenv("APIFY_TOKEN")
+cloudflare_worker = os.getenv("CLOUDFLARE_WORKER_URL")
+
 # Sidebar Configuration
 with st.sidebar:
     st.image("https://img.icons8.com/isometric-line/100/parse-resumes.png", width=70)
-    st.markdown("### Control & API Settings")
-    st.markdown("Configure the backend keys and integrations below.")
+    st.markdown("### Integration Status")
+    st.markdown("API connections loaded from Railway environment variables.")
     
-    # API key inputs
-    st.session_state.api_keys["GEMINI_API_KEY"] = st.text_input(
-        "Google Gemini API Key",
-        value=st.session_state.api_keys["GEMINI_API_KEY"],
-        type="password",
-        help="Used to summarize lead context and build the final report structure."
-    )
+    st.markdown("---")
     
-    st.session_state.api_keys["TAVILY_API_KEY"] = st.text_input(
-        "Tavily Search API Key",
-        value=st.session_state.api_keys["TAVILY_API_KEY"],
-        type="password",
-        help="Preferred search API for crawling the web for individual & company details."
-    )
-    
-    st.session_state.api_keys["SERPER_API_KEY"] = st.text_input(
-        "Serper Search API Key (Fallback)",
-        value=st.session_state.api_keys["SERPER_API_KEY"],
-        type="password",
-        help="Alternate search API key if Tavily is not being used."
-    )
+    # Gemini
+    if gemini_key:
+        st.markdown("✨ **Gemini LLM**  \n`🟢 Connected`")
+    else:
+        st.markdown("✨ **Gemini LLM**  \n`🔴 Missing Key`")
+
+    # Search API
+    if tavily_key:
+        st.markdown("🔍 **Tavily Search**  \n`🟢 Connected`")
+    elif serper_key:
+        st.markdown("🔍 **Serper Search**  \n`🟢 Connected`")
+    else:
+        st.markdown("🔍 **Search API**  \n`🔴 Missing Key`")
+
+    # Apify
+    if apify_token:
+        st.markdown("🕷️ **Apify Scraper**  \n`🟢 Active`")
+    else:
+        st.markdown("🕷️ **Apify Scraper**  \n`🟡 Inactive (Search fallback)`")
+
+    # Cloudflare Worker
+    if cloudflare_worker:
+        st.markdown("⚡ **Cloudflare Worker**  \n`🟢 Configured`")
+    else:
+        st.markdown("⚡ **Cloudflare Worker**  \n`🟡 Local Fallback`")
 
     st.markdown("---")
-    st.markdown("### Apify Scraper Settings")
-    st.session_state.api_keys["APIFY_TOKEN"] = st.text_input(
-        "Apify API Token (Free Tier)",
-        value=st.session_state.api_keys["APIFY_TOKEN"],
-        type="password",
-        help="Get a free token on apify.com (includes $5 free monthly credits). Enables professional LinkedIn profile scraping."
-    )
-
-    st.markdown("---")
-    st.markdown("### Cloudflare Worker Settings")
-    st.session_state.api_keys["CLOUDFLARE_WORKER_URL"] = st.text_input(
-        "Cloudflare Worker URL",
-        value=st.session_state.api_keys["CLOUDFLARE_WORKER_URL"],
-        placeholder="https://my-worker.subdomain.workers.dev",
-        help="The HTTP endpoint of your deployed Cloudflare Worker search proxy. If empty, local search fallback is used."
-    )
-
-    st.markdown("---")
-    st.markdown("<small style='color: #718096;'>Lead Researcher v2.1.0<br>Cloudflare, Apify & Crawl4ai Stack</small>", unsafe_allow_html=True)
+    st.markdown("<small style='color: #718096;'>Lead Researcher v2.2.0<br>Cloudflare, Apify & Crawl4ai Stack</small>", unsafe_allow_html=True)
 
 
 # Main Content Area
@@ -186,10 +173,10 @@ with col2:
 if submitted:
     if not lead_username or not lead_email:
         st.error("Missing fields: Username and Email are required.")
-    elif not st.session_state.api_keys["GEMINI_API_KEY"]:
-        st.error("Please configure the Gemini API Key in the left sidebar to generate the report.")
-    elif not st.session_state.api_keys["TAVILY_API_KEY"] and not st.session_state.api_keys["SERPER_API_KEY"]:
-        st.error("Please configure a Web Search API Key (Tavily or Serper) in the left sidebar.")
+    elif not gemini_key:
+        st.error("Please configure the GEMINI_API_KEY variable in your Railway dashboard to generate reports.")
+    elif not tavily_key and not serper_key:
+        st.error("Please configure a web search API variable (TAVILY_API_KEY or SERPER_API_KEY) in your Railway dashboard.")
     else:
         # Import research and pdf components
         from researcher import perform_full_research
