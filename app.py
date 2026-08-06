@@ -94,8 +94,6 @@ if "pdf_ready" not in st.session_state:
 
 # Read environment variables directly
 import os
-tavily_key = os.getenv("TAVILY_API_KEY")
-serper_key = os.getenv("SERPER_API_KEY")
 apify_token = os.getenv("APIFY_TOKEN")
 cloudflare_worker = os.getenv("CLOUDFLARE_WORKER_URL")
 
@@ -117,8 +115,8 @@ with st.form("research_form"):
 if submitted:
     if not lead_username or not lead_email:
         st.error("Missing fields: Username and Email are required.")
-    elif not tavily_key and not serper_key:
-        st.error("Please configure a web search API variable (TAVILY_API_KEY or SERPER_API_KEY) in your Railway dashboard.")
+    elif not cloudflare_worker:
+        st.error("Please configure the CLOUDFLARE_WORKER_URL variable in your Railway dashboard to connect to the search backend.")
     else:
         # Import research and pdf components
         from researcher import perform_full_research
