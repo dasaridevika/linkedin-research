@@ -183,4 +183,3 @@ if st.session_state.pdf_ready:
         st.markdown(pdf_display, unsafe_allow_html=True)
     except Exception as e:
         st.warning("Could not render inline PDF preview in this browser session. Please download using the button above.")
-
