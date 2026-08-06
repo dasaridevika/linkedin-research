@@ -1,0 +1,8 @@
+streamlit>=1.30.0
+google-generativeai>=0.3.2
+requests>=2.31.0
+python-dotenv>=1.0.0
+reportlab>=4.0.0
+playwright>=1.40.0
+nest-asyncio>=1.5.8
+crawl4ai>=0.3.5

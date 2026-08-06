@@ -1,0 +1,19 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+.venv/
+env/
+.env
+
+# Streamlit
+.streamlit/
+
+# Reports / Output data
+downloads/*.pdf
+
+# Node / Cloudflare Worker logs/configs
+node_modules/
+.wrangler/
+dist/
