@@ -84,7 +84,20 @@ Required JSON Schema:
           ]
         });
 
-        const modelText = aiResponse.response || "";
+        let modelText = "";
+        if (typeof aiResponse === "string") {
+          modelText = aiResponse;
+        } else if (aiResponse && typeof aiResponse === "object") {
+          if (typeof aiResponse.response === "string") {
+            modelText = aiResponse.response;
+          } else if (aiResponse.response) {
+            modelText = JSON.stringify(aiResponse.response);
+          } else {
+            modelText = JSON.stringify(aiResponse);
+          }
+        } else {
+          modelText = String(aiResponse || "");
+        }
         
         // Clean and parse JSON from the response text
         let parsedReport;
