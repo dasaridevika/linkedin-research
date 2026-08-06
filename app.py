@@ -17,18 +17,18 @@ st.markdown("""
     /* Import modern Google font */
     @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap');
     
-    /* Global styles */
-    html, body, [class*="css"], .stApp {
+    /* Global styles forcing black font color */
+    html, body, [class*="css"], .stApp, .stApp p, .stApp span, .stApp label, .stApp div {
         font-family: 'Plus Jakarta Sans', sans-serif;
+        color: #000000 !important;
     }
     
     /* Glassmorphism containers */
     .card-container {
-        background: rgba(255, 255, 255, 0.05);
-        backdrop-filter: blur(10px);
+        background: rgba(0, 0, 0, 0.03);
         border-radius: 12px;
         padding: 24px;
-        border: 1px solid rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(0, 0, 0, 0.1);
         margin-bottom: 20px;
     }
     
@@ -36,7 +36,7 @@ st.markdown("""
     .skill-badge {
         display: inline-block;
         background: linear-gradient(135deg, #319795 0%, #2B6CB0 100%);
-        color: white;
+        color: white !important;
         border-radius: 20px;
         padding: 5px 12px;
         font-size: 0.85rem;
@@ -67,16 +67,16 @@ st.markdown("""
     .main-title {
         font-size: 2.5rem;
         font-weight: 700;
-        background: linear-gradient(135deg, #E2E8F0 30%, #90CDF4 100%);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
+        color: #000000 !important;
+        background: none !important;
+        -webkit-text-fill-color: #000000 !important;
         margin-bottom: 5px;
     }
     .main-subtitle {
         font-size: 1.1rem;
-        color: #A0AEC0;
+        color: #1A202C !important;
         margin-bottom: 30px;
-        font-weight: 300;
+        font-weight: 400;
     }
     /* Completely hide the sidebar toggle control */
     [data-testid="collapsedControl"] {
