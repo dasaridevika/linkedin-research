@@ -81,7 +81,8 @@ Required JSON Schema:
           messages: [
             { role: "system", content: systemPrompt },
             { role: "user", content: `Here is the gathered context about the lead:\n\n${context}\n\nCompile the JSON lead intelligence dossier:` }
-          ]
+          ],
+          max_tokens: 1500
         });
 
         let modelText = "";
