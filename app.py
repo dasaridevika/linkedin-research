@@ -78,10 +78,6 @@ st.markdown("""
         font-weight: 300;
     }
     
-    /* Sidebar styling tweaks */
-    .css-1639gjc {
-        background-color: #0F172A !important;
-    }
 </style>
 """, unsafe_allow_html=True)
 
