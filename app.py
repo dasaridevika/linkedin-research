@@ -7,7 +7,7 @@ st.set_page_config(
     page_title="Executive Lead Researcher",
     page_icon="💼",
     layout="wide",
-    initial_sidebar_state="expanded"
+    initial_sidebar_state="collapsed"
 )
 
 # Apply premium styling using custom CSS
@@ -99,44 +99,6 @@ tavily_key = os.getenv("TAVILY_API_KEY")
 serper_key = os.getenv("SERPER_API_KEY")
 apify_token = os.getenv("APIFY_TOKEN")
 cloudflare_worker = os.getenv("CLOUDFLARE_WORKER_URL")
-
-# Sidebar Configuration
-with st.sidebar:
-    st.image("https://img.icons8.com/isometric-line/100/parse-resumes.png", width=70)
-    st.markdown("### Integration Status")
-    st.markdown("API connections loaded from Railway environment variables.")
-    
-    st.markdown("---")
-    
-    # Gemini
-    if gemini_key:
-        st.markdown("✨ **Gemini LLM**  \n`🟢 Connected`")
-    else:
-        st.markdown("✨ **Gemini LLM**  \n`🔴 Missing Key`")
-
-    # Search API
-    if tavily_key:
-        st.markdown("🔍 **Tavily Search**  \n`🟢 Connected`")
-    elif serper_key:
-        st.markdown("🔍 **Serper Search**  \n`🟢 Connected`")
-    else:
-        st.markdown("🔍 **Search API**  \n`🔴 Missing Key`")
-
-    # Apify
-    if apify_token:
-        st.markdown("🕷️ **Apify Scraper**  \n`🟢 Active`")
-    else:
-        st.markdown("🕷️ **Apify Scraper**  \n`🟡 Inactive (Search fallback)`")
-
-    # Cloudflare Worker
-    if cloudflare_worker:
-        st.markdown("⚡ **Cloudflare Worker**  \n`🟢 Configured`")
-    else:
-        st.markdown("⚡ **Cloudflare Worker**  \n`🟡 Local Fallback`")
-
-    st.markdown("---")
-    st.markdown("<small style='color: #718096;'>Lead Researcher v2.2.0<br>Cloudflare, Apify & Crawl4ai Stack</small>", unsafe_allow_html=True)
-
 
 # Main Content Area
 st.markdown("<h1 class='main-title'>Lead Intelligence Researcher</h1>", unsafe_allow_html=True)
