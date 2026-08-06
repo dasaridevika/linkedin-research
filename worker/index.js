@@ -77,7 +77,7 @@ Required JSON Schema:
   ]
 }`;
 
-        const aiResponse = await env.AI.run("@cf/meta/llama-3.1-8b-instruct", {
+        const aiResponse = await env.AI.run("@cf/meta/llama-3.2-3b-instruct", {
           messages: [
             { role: "system", content: systemPrompt },
             { role: "user", content: `Here is the gathered context about the lead:\n\n${context}\n\nCompile the JSON lead intelligence dossier:` }
