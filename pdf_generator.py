@@ -193,15 +193,15 @@ def generate_lead_pdf(data: dict, filepath: str):
     meta_data = [
         [
             Paragraph("Lead Name", table_body_bold_style), 
-            Paragraph(data.get('lead_name', 'N/A'), table_body_style),
+            Paragraph(str(data.get('lead_name') or 'N/A'), table_body_style),
             Paragraph("Current Company", table_body_bold_style),
-            Paragraph(data.get('company_name', 'N/A'), table_body_style)
+            Paragraph(str(data.get('company_name') or 'N/A'), table_body_style)
         ],
         [
             Paragraph("Email Address", table_body_bold_style),
-            Paragraph(data.get('lead_email', 'N/A'), table_body_style),
+            Paragraph(str(data.get('lead_email') or 'N/A'), table_body_style),
             Paragraph("LinkedIn Profile", table_body_bold_style),
-            Paragraph(data.get('linkedin_url', 'N/A'), table_body_style)
+            Paragraph(str(data.get('linkedin_url') or 'N/A'), table_body_style)
         ]
     ]
     meta_table = Table(meta_data, colWidths=[1.2*inch, 2.3*inch, 1.3*inch, 2.2*inch])
@@ -252,10 +252,10 @@ def generate_lead_pdf(data: dict, filepath: str):
     
     comp_meta = [
         [Paragraph("Detail", table_header_style), Paragraph("Value", table_header_style)],
-        [Paragraph("Company Name", table_body_bold_style), Paragraph(comp_info.get('name', data.get('company_name', 'N/A')), table_body_style)],
-        [Paragraph("Industry", table_body_bold_style), Paragraph(comp_info.get('industry', 'N/A'), table_body_style)],
-        [Paragraph("Company Size", table_body_bold_style), Paragraph(comp_info.get('size', 'N/A'), table_body_style)],
-        [Paragraph("Website", table_body_bold_style), Paragraph(comp_info.get('website', 'N/A'), table_body_style)]
+        [Paragraph("Company Name", table_body_bold_style), Paragraph(str(comp_info.get('name') or data.get('company_name') or 'N/A'), table_body_style)],
+        [Paragraph("Industry", table_body_bold_style), Paragraph(str(comp_info.get('industry') or 'N/A'), table_body_style)],
+        [Paragraph("Company Size", table_body_bold_style), Paragraph(str(comp_info.get('size') or 'N/A'), table_body_style)],
+        [Paragraph("Website", table_body_bold_style), Paragraph(str(comp_info.get('website') or 'N/A'), table_body_style)]
     ]
     comp_table = Table(comp_meta, colWidths=[1.8*inch, 5.2*inch])
     comp_table.setStyle(TableStyle([

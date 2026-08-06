@@ -141,7 +141,7 @@ if submitted:
                 
                 # Stage 3
                 status.write("Compiling Report PDF...")
-                resolved_name = results.get('lead_name', 'Lead')
+                resolved_name = results.get('lead_name') or 'Lead'
                 pdf_filename = f"report_{resolved_name.lower().replace(' ', '_')}_{datetime.now().strftime('%Y%m%d%H%M')}.pdf"
                 pdf_filepath = os.path.join("downloads", pdf_filename)
                 
