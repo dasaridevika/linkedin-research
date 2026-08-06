@@ -77,7 +77,10 @@ st.markdown("""
         margin-bottom: 30px;
         font-weight: 300;
     }
-    
+    /* Completely hide the sidebar toggle control */
+    [data-testid="collapsedControl"] {
+        display: none;
+    }
 </style>
 """, unsafe_allow_html=True)
 
