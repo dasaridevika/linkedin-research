@@ -17,10 +17,9 @@ st.markdown("""
     /* Import modern Google font */
     @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap');
     
-    /* Global styles utilizing adaptive theme colors */
+    /* Global font configuration */
     html, body, [class*="css"], .stApp, .stApp p, .stApp span, .stApp label, .stApp div {
         font-family: 'Plus Jakarta Sans', sans-serif;
-        color: var(--text-color) !important;
     }
     
     /* Glassmorphism containers (adaptive to light/dark themes) */
