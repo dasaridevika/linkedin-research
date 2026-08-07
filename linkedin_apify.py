@@ -35,6 +35,7 @@ def scrape_profile_apify(profile_url: str, apify_token: str) -> dict:
     # Payload configuring the scraper to target the profile
     payload = {
         "urls": [profile_url],
+        "profile_scraper_mode": "no_email",
         "proxyConfiguration": {
             "useApifyProxy": True
         }
