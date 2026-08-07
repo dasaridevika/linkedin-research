@@ -74,14 +74,14 @@ def _parse_apify_profile(raw_data: dict) -> dict:
     """
     # Extract experiences
     experiences = []
-    for exp in raw_data.get("positions", raw_data.get("experience", [])):
-        company_name = exp.get("companyName", exp.get("company", ""))
+    for exp in raw_data.get("positions", raw_data.get("experiences", raw_data.get("experience", []))):
+        company_name = exp.get("companyName", exp.get("company", exp.get("company_name", "")))
         title = exp.get("title", "")
         start_date = exp.get("startDate", {})
         end_date = exp.get("endDate", {})
         
-        start_year = start_date.get("year", "") if isinstance(start_date, dict) else ""
-        end_year = end_date.get("year", "Present") if isinstance(end_date, dict) else "Present"
+        start_year = start_date.get("year", start_date) if isinstance(start_date, dict) else (start_date or "")
+        end_year = end_date.get("year", end_date) if isinstance(end_date, dict) else (end_date or "Present")
         period = f"{start_year} - {end_year}" if start_year else ""
         
         experiences.append({
@@ -102,13 +102,13 @@ def _parse_apify_profile(raw_data: dict) -> dict:
 
     # Standardize output profile schema
     return {
-        "full_name": raw_data.get("name", raw_data.get("fullName", "")),
+        "full_name": raw_data.get("name", raw_data.get("fullName", raw_data.get("full_name", ""))),
         "first_name": raw_data.get("firstName", ""),
         "last_name": raw_data.get("lastName", ""),
         "headline": raw_data.get("headline", ""),
-        "summary": raw_data.get("summary", ""),
+        "summary": raw_data.get("summary", raw_data.get("about", "")),
         "experiences": experiences,
         "education": education,
-        "skills": [s.get("name", s) for s in raw_data.get("skills", [])][:10],
+        "skills": [s.get("name", s) if isinstance(s, dict) else s for s in raw_data.get("skills", [])][:10],
         "city": raw_data.get("location", {}).get("city", "") if isinstance(raw_data.get("location"), dict) else raw_data.get("location", "")
     }
