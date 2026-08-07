@@ -27,7 +27,8 @@ def scrape_profile_enrichment(profile_url: str, apify_token: str = None, scrapin
             params = {
                 "api_key": scrapingdog_key,
                 "type": "profile",
-                "id": linkedin_id
+                "id": linkedin_id,
+                "premium": "true"
             }
             response = requests.get("https://api.scrapingdog.com/profile", params=params, timeout=25)
             
