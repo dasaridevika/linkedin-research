@@ -25,7 +25,7 @@ def scrape_profile_apify(profile_url: str, apify_token: str) -> dict:
     # but the standard actor is 'apify/linkedin-profile-scraper' (requires a premium proxy proxy or standard login).
     # Let's use the popular and reliable 'bebity/linkedin-profile-scraper' or 'curious_coder/linkedin-profile-scraper' 
     # which works well on free/trial tiers.
-    actor_id = "bebity/linkedin-profile-scraper"
+    actor_id = "bebity~linkedin-profile-scraper"
     url = f"https://api.apify.com/v2/acts/{actor_id}/run-sync-get-dataset-items"
     
     headers = {
