@@ -4,13 +4,12 @@ import json
 
 logger = logging.getLogger(__name__)
 
-def scrape_profile_enrichment(profile_url: str, apify_token: str = None, proxycurl_key: str = None, scrapingdog_key: str = None) -> dict:
+def scrape_profile_enrichment(profile_url: str, apify_token: str = None, scrapingdog_key: str = None) -> dict:
     """
     Orchestrates LinkedIn profile enrichment.
     Tries active keys in order of reliability:
-    1. Proxycurl (Direct B2B Profile API)
-    2. Scrapingdog (LinkedIn Scraper API)
-    3. Apify (Fallback browser automation)
+    1. Scrapingdog (LinkedIn Scraper API)
+    2. Apify (Fallback browser automation)
     """
     # Clean the profile URL
     profile_url = profile_url.strip().rstrip("/")
@@ -19,27 +18,7 @@ def scrape_profile_enrichment(profile_url: str, apify_token: str = None, proxycu
     elif not profile_url.startswith("http"):
         profile_url = f"https://linkedin.com/in/{profile_url}"
 
-    # 1. Try Proxycurl
-    if proxycurl_key:
-        try:
-            logger.info(f"Querying Proxycurl for URL: {profile_url}")
-            headers = {"Authorization": f"Bearer {proxycurl_key}"}
-            params = {
-                "url": profile_url,
-                "fallback_to_cache": "on-error",
-                "use_cache": "if-present"
-            }
-            response = requests.get("https://nubela.co/api/v1/linkedin", headers=headers, params=params, timeout=25)
-            
-            if response.status_code == 200:
-                logger.info("Successfully fetched profile data from Proxycurl.")
-                return _parse_proxycurl_profile(response.json())
-            else:
-                logger.error(f"Proxycurl API returned status {response.status_code}: {response.text}")
-        except Exception as e:
-            logger.error(f"Failed to query Proxycurl API: {str(e)}")
-
-    # 2. Try Scrapingdog
+    # 1. Try Scrapingdog
     if scrapingdog_key:
         try:
             logger.info(f"Querying Scrapingdog for URL: {profile_url}")
@@ -93,48 +72,6 @@ def scrape_profile_enrichment(profile_url: str, apify_token: str = None, proxycu
 
     return {"error": "All enrichment integrations failed or keys were missing"}
 
-def _parse_proxycurl_profile(raw_data: dict) -> dict:
-    """
-    Parses Proxycurl JSON response structure.
-    """
-    experiences = []
-    for exp in raw_data.get("experiences", []):
-        company_name = exp.get("company", "")
-        title = exp.get("title", "")
-        
-        # Format dates
-        start = exp.get("starts_at", {}) or {}
-        end = exp.get("ends_at", {}) or {}
-        start_year = start.get("year", "") if isinstance(start, dict) else ""
-        end_year = end.get("year", "Present") if isinstance(end, dict) else "Present"
-        period = f"{start_year} - {end_year}" if start_year else ""
-        
-        experiences.append({
-            "title": title,
-            "company": company_name,
-            "period": period,
-            "description": exp.get("description", "")
-        })
-        
-    education = []
-    for edu in raw_data.get("education", []):
-        education.append({
-            "school": edu.get("school", ""),
-            "degree_name": edu.get("degree_name", ""),
-            "field_of_study": edu.get("field_of_study", "")
-        })
-        
-    return {
-        "full_name": raw_data.get("full_name", ""),
-        "first_name": raw_data.get("first_name", ""),
-        "last_name": raw_data.get("last_name", ""),
-        "headline": raw_data.get("headline", ""),
-        "summary": raw_data.get("summary", ""),
-        "experiences": experiences,
-        "education": education,
-        "skills": raw_data.get("skills", [])[:10],
-        "city": raw_data.get("city", "")
-    }
 
 def _parse_scrapingdog_profile(raw_data: dict) -> dict:
     """

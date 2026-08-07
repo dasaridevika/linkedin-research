@@ -63,12 +63,11 @@ def perform_full_research(lead_username: str, lead_email: str) -> dict:
 
     # 3. Locate LinkedIn URL and scrape via Enrichment APIs if keys exist
     apify_token = get_config("APIFY_TOKEN")
-    proxycurl_key = get_config("PROXYCURL_API_KEY")
     scrapingdog_key = get_config("SCRAPINGDOG_API_KEY")
     linkedin_url = ""
     raw_linkedin_profile = {}
 
-    if apify_token or proxycurl_key or scrapingdog_key:
+    if apify_token or scrapingdog_key:
         # Determine LinkedIn URL from input or search hits
         if "linkedin.com/in/" in lead_username:
             linkedin_url = lead_username
@@ -91,7 +90,6 @@ def perform_full_research(lead_username: str, lead_email: str) -> dict:
             profile_data = scrape_profile_enrichment(
                 profile_url=linkedin_url,
                 apify_token=apify_token,
-                proxycurl_key=proxycurl_key,
                 scrapingdog_key=scrapingdog_key
             )
             if profile_data and "error" not in profile_data:
