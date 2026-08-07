@@ -16,16 +16,15 @@ def scrape_profile_apify(profile_url: str, apify_token: str) -> dict:
         return {"error": "Apify API Token is missing"}
 
     # Clean the profile URL
-    profile_url = profile_url.strip()
-    if not profile_url.startswith("http"):
-        profile_url = f"https://www.linkedin.com/in/{profile_url}"
+    profile_url = profile_url.strip().rstrip("/")
+    if "www.linkedin.com" in profile_url:
+        profile_url = profile_url.replace("www.linkedin.com", "linkedin.com")
+    elif not profile_url.startswith("http"):
+        profile_url = f"https://linkedin.com/in/{profile_url}"
 
     # Apify API endpoint for running an actor synchronously and getting dataset items
-    # Actor: 'dtrungtin/linkedin-profile-scraper' or 'bebity/linkedin-profile-scraper' are popular,
-    # but the standard actor is 'apify/linkedin-profile-scraper' (requires a premium proxy proxy or standard login).
-    # Let's use the popular and reliable 'bebity/linkedin-profile-scraper' or 'curious_coder/linkedin-profile-scraper' 
-    # which works well on free/trial tiers.
-    actor_id = "leadsman~linkedin-profile-scraper"
+    # We use 'data-slayer~linkedin-profile-scraper' which has a higher success rate with proxy rotations
+    actor_id = "data-slayer~linkedin-profile-scraper"
     url = f"https://api.apify.com/v2/acts/{actor_id}/run-sync-get-dataset-items"
     
     headers = {
@@ -35,7 +34,6 @@ def scrape_profile_apify(profile_url: str, apify_token: str) -> dict:
     # Payload configuring the scraper to target the profile
     payload = {
         "urls": [profile_url],
-        "profile_scraper_mode": "no_email",
         "proxyConfiguration": {
             "useApifyProxy": True
         }
