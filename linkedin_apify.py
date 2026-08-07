@@ -1,20 +1,17 @@
 import requests
 import logging
-import time
+import json
 
 logger = logging.getLogger(__name__)
 
-def scrape_profile_apify(profile_url: str, apify_token: str) -> dict:
+def scrape_profile_enrichment(profile_url: str, apify_token: str = None, proxycurl_key: str = None, scrapingdog_key: str = None) -> dict:
     """
-    Runs the Apify LinkedIn Profile Scraper actor and returns the structured JSON dataset.
-    Uses Apify's run-sync endpoint to wait for results (timeout 60 seconds).
-    
-    Actor used: 'apify/linkedin-profile-scraper' (or equivalent community scraper).
+    Orchestrates LinkedIn profile enrichment.
+    Tries active keys in order of reliability:
+    1. Proxycurl (Direct B2B Profile API)
+    2. Scrapingdog (LinkedIn Scraper API)
+    3. Apify (Fallback browser automation)
     """
-    if not apify_token:
-        logger.error("Apify API Token is missing.")
-        return {"error": "Apify API Token is missing"}
-
     # Clean the profile URL
     profile_url = profile_url.strip().rstrip("/")
     if "www.linkedin.com" in profile_url:
@@ -22,55 +19,162 @@ def scrape_profile_apify(profile_url: str, apify_token: str) -> dict:
     elif not profile_url.startswith("http"):
         profile_url = f"https://linkedin.com/in/{profile_url}"
 
-    # Apify API endpoint for running an actor synchronously and getting dataset items
-    # We use 'data-slayer~linkedin-profile-scraper' which has a higher success rate with proxy rotations
-    actor_id = "data-slayer~linkedin-profile-scraper"
-    url = f"https://api.apify.com/v2/acts/{actor_id}/run-sync-get-dataset-items"
-    
-    headers = {
-        "Content-Type": "application/json"
-    }
-    
-    # Payload configuring the scraper to target the profile
-    payload = {
-        "urls": [profile_url],
-        "proxyConfiguration": {
-            "useApifyProxy": True
-        }
-    }
-    
-    params = {
-        "token": apify_token,
-        "timeout": 60 # 60 second timeout for synchronous execution
+    # 1. Try Proxycurl
+    if proxycurl_key:
+        try:
+            logger.info(f"Querying Proxycurl for URL: {profile_url}")
+            headers = {"Authorization": f"Bearer {proxycurl_key}"}
+            params = {
+                "url": profile_url,
+                "fallback_to_cache": "on-error",
+                "use_cache": "if-present"
+            }
+            response = requests.get("https://nubela.co/api/v1/linkedin", headers=headers, params=params, timeout=25)
+            
+            if response.status_code == 200:
+                logger.info("Successfully fetched profile data from Proxycurl.")
+                return _parse_proxycurl_profile(response.json())
+            else:
+                logger.error(f"Proxycurl API returned status {response.status_code}: {response.text}")
+        except Exception as e:
+            logger.error(f"Failed to query Proxycurl API: {str(e)}")
+
+    # 2. Try Scrapingdog
+    if scrapingdog_key:
+        try:
+            logger.info(f"Querying Scrapingdog for URL: {profile_url}")
+            params = {
+                "api_key": scrapingdog_key,
+                "type": "profile",
+                "url": profile_url
+            }
+            response = requests.get("https://api.scrapingdog.com/linkedin", params=params, timeout=25)
+            
+            if response.status_code == 200:
+                logger.info("Successfully fetched profile data from Scrapingdog.")
+                return _parse_scrapingdog_profile(response.json())
+            else:
+                logger.error(f"Scrapingdog API returned status {response.status_code}: {response.text}")
+        except Exception as e:
+            logger.error(f"Failed to query Scrapingdog API: {str(e)}")
+
+    # 3. Fallback to Apify
+    if apify_token:
+        try:
+            logger.info(f"Fallback: Triggering Apify data-slayer LinkedIn Scraper for URL: {profile_url}")
+            actor_id = "data-slayer~linkedin-profile-scraper"
+            url = f"https://api.apify.com/v2/acts/{actor_id}/run-sync-get-dataset-items"
+            
+            headers = {"Content-Type": "application/json"}
+            payload = {
+                "urls": [profile_url],
+                "proxyConfiguration": {
+                    "useApifyProxy": True
+                }
+            }
+            params = {
+                "token": apify_token,
+                "timeout": 60
+            }
+            
+            response = requests.post(url, json=payload, headers=headers, params=params, timeout=70)
+            
+            if response.status_code in [200, 201]:
+                dataset_items = response.json()
+                if isinstance(dataset_items, list) and len(dataset_items) > 0:
+                    logger.info("Successfully fetched profile data from Apify.")
+                    return _parse_apify_profile(dataset_items[0])
+                else:
+                    logger.warning("Apify completed but returned an empty dataset.")
+            else:
+                logger.error(f"Apify API returned error status {response.status_code}: {response.text}")
+        except Exception as e:
+            logger.error(f"Failed to query Apify API: {str(e)}")
+
+    return {"error": "All enrichment integrations failed or keys were missing"}
+
+def _parse_proxycurl_profile(raw_data: dict) -> dict:
+    """
+    Parses Proxycurl JSON response structure.
+    """
+    experiences = []
+    for exp in raw_data.get("experiences", []):
+        company_name = exp.get("company", "")
+        title = exp.get("title", "")
+        
+        # Format dates
+        start = exp.get("starts_at", {}) or {}
+        end = exp.get("ends_at", {}) or {}
+        start_year = start.get("year", "") if isinstance(start, dict) else ""
+        end_year = end.get("year", "Present") if isinstance(end, dict) else "Present"
+        period = f"{start_year} - {end_year}" if start_year else ""
+        
+        experiences.append({
+            "title": title,
+            "company": company_name,
+            "period": period,
+            "description": exp.get("description", "")
+        })
+        
+    education = []
+    for edu in raw_data.get("education", []):
+        education.append({
+            "school": edu.get("school", ""),
+            "degree_name": edu.get("degree_name", ""),
+            "field_of_study": edu.get("field_of_study", "")
+        })
+        
+    return {
+        "full_name": raw_data.get("full_name", ""),
+        "first_name": raw_data.get("first_name", ""),
+        "last_name": raw_data.get("last_name", ""),
+        "headline": raw_data.get("headline", ""),
+        "summary": raw_data.get("summary", ""),
+        "experiences": experiences,
+        "education": education,
+        "skills": raw_data.get("skills", [])[:10],
+        "city": raw_data.get("city", "")
     }
 
-    try:
-        logger.info(f"Triggering Apify LinkedIn Scraper for URL: {profile_url}")
-        response = requests.post(url, json=payload, headers=headers, params=params, timeout=70)
+def _parse_scrapingdog_profile(raw_data: dict) -> dict:
+    """
+    Parses Scrapingdog JSON response structure.
+    """
+    experiences = []
+    # Scrapingdog usually returns list of experiences
+    for exp in raw_data.get("experience", []):
+        period = f"{exp.get('startDate', '')} - {exp.get('endDate', 'Present')}"
+        experiences.append({
+            "title": exp.get("title", ""),
+            "company": exp.get("companyName", ""),
+            "period": period.strip(" -"),
+            "description": exp.get("description", "")
+        })
         
-        if response.status_code == 201 or response.status_code == 200:
-            dataset_items = response.json()
-            if isinstance(dataset_items, list) and len(dataset_items) > 0:
-                # The response is a list of scraped profiles, return the first one
-                profile_data = dataset_items[0]
-                logger.info("Successfully fetched profile data from Apify.")
-                return _parse_apify_profile(profile_data)
-            else:
-                logger.warning("Apify completed but returned an empty dataset.")
-                return {"error": "Empty dataset returned from scraper"}
-        else:
-            logger.error(f"Apify API returned error status {response.status_code}: {response.text}")
-            return {"error": f"Apify error {response.status_code}: {response.text}"}
-            
-    except Exception as e:
-        logger.error(f"Failed to query Apify API: {str(e)}")
-        return {"error": f"Apify query failed: {str(e)}"}
+    education = []
+    for edu in raw_data.get("education", []):
+        education.append({
+            "school": edu.get("schoolName", ""),
+            "degree_name": edu.get("degreeName", ""),
+            "field_of_study": edu.get("fieldOfStudy", "")
+        })
+        
+    return {
+        "full_name": raw_data.get("fullName", ""),
+        "first_name": "",
+        "last_name": "",
+        "headline": raw_data.get("headline", ""),
+        "summary": raw_data.get("about", ""),
+        "experiences": experiences,
+        "education": education,
+        "skills": raw_data.get("skills", [])[:10],
+        "city": raw_data.get("location", "")
+    }
 
 def _parse_apify_profile(raw_data: dict) -> dict:
     """
-    Standardizes Apify's JSON layout to match the expected schema in our PDF/Gemini synthesizers.
+    Parses Apify's JSON response structure.
     """
-    # Extract experiences
     experiences = []
     for exp in raw_data.get("positions", raw_data.get("experiences", raw_data.get("experience", []))):
         company_name = exp.get("companyName", exp.get("company", exp.get("company_name", "")))
@@ -89,7 +193,6 @@ def _parse_apify_profile(raw_data: dict) -> dict:
             "description": exp.get("description", "")
         })
 
-    # Extract education
     education = []
     for edu in raw_data.get("education", []):
         education.append({
@@ -98,7 +201,6 @@ def _parse_apify_profile(raw_data: dict) -> dict:
             "field_of_study": edu.get("fieldOfStudy", "")
         })
 
-    # Standardize output profile schema
     return {
         "full_name": raw_data.get("name", raw_data.get("fullName", raw_data.get("full_name", ""))),
         "first_name": raw_data.get("firstName", ""),

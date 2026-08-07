@@ -61,12 +61,14 @@ def perform_full_research(lead_username: str, lead_email: str) -> dict:
                 search_query_2 = f'"{lead_username}" "{domain.split(".")[0]}"'
                 search_hits.extend(web_search(search_query_2, max_results=3))
 
-    # 3. Locate LinkedIn URL and scrape via Apify if token exists
+    # 3. Locate LinkedIn URL and scrape via Enrichment APIs if keys exist
     apify_token = get_config("APIFY_TOKEN")
+    proxycurl_key = get_config("PROXYCURL_API_KEY")
+    scrapingdog_key = get_config("SCRAPINGDOG_API_KEY")
     linkedin_url = ""
     raw_linkedin_profile = {}
 
-    if apify_token:
+    if apify_token or proxycurl_key or scrapingdog_key:
         # Determine LinkedIn URL from input or search hits
         if "linkedin.com/in/" in lead_username:
             linkedin_url = lead_username
@@ -81,19 +83,24 @@ def perform_full_research(lead_username: str, lead_email: str) -> dict:
             # Heuristic fallback if not found in hits
             if not linkedin_url:
                 clean_username = lead_username.strip().strip("/")
-                linkedin_url = f"https://www.linkedin.com/in/{clean_username}"
+                linkedin_url = f"https://linkedin.com/in/{clean_username}"
 
         try:
-            logger.info(f"Triggering Apify scraper for: {linkedin_url}")
-            from linkedin_apify import scrape_profile_apify
-            profile_data = scrape_profile_apify(linkedin_url, apify_token)
+            logger.info(f"Triggering LinkedIn profile enrichment for: {linkedin_url}")
+            from linkedin_apify import scrape_profile_enrichment
+            profile_data = scrape_profile_enrichment(
+                profile_url=linkedin_url,
+                apify_token=apify_token,
+                proxycurl_key=proxycurl_key,
+                scrapingdog_key=scrapingdog_key
+            )
             if profile_data and "error" not in profile_data:
                 raw_linkedin_profile = profile_data
-                logger.info("Successfully fetched and resolved LinkedIn profile via Apify.")
+                logger.info("Successfully fetched and resolved LinkedIn profile via enrichment.")
             else:
-                logger.warning(f"Apify returned empty or error profile data: {profile_data}")
+                logger.warning(f"Enrichment scraper returned empty or error profile data: {profile_data}")
         except Exception as e:
-            logger.error(f"Apify profile scraping execution failed: {str(e)}")
+            logger.error(f"LinkedIn profile enrichment execution failed: {str(e)}")
 
     # 4. Crawl other non-LinkedIn webpages using Playwright/Crawl4ai
     crawled_pages = []
