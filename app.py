@@ -17,18 +17,18 @@ st.markdown("""
     /* Import modern Google font */
     @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap');
     
-    /* Global styles forcing black font color */
+    /* Global styles utilizing adaptive theme colors */
     html, body, [class*="css"], .stApp, .stApp p, .stApp span, .stApp label, .stApp div {
         font-family: 'Plus Jakarta Sans', sans-serif;
-        color: #000000 !important;
+        color: var(--text-color) !important;
     }
     
-    /* Glassmorphism containers */
+    /* Glassmorphism containers (adaptive to light/dark themes) */
     .card-container {
-        background: rgba(0, 0, 0, 0.03);
+        background: rgba(128, 128, 128, 0.05);
         border-radius: 12px;
         padding: 24px;
-        border: 1px solid rgba(0, 0, 0, 0.1);
+        border: 1px solid rgba(128, 128, 128, 0.15);
         margin-bottom: 20px;
     }
     
@@ -67,16 +67,17 @@ st.markdown("""
     .main-title {
         font-size: 2.5rem;
         font-weight: 700;
-        color: #000000 !important;
+        color: var(--text-color) !important;
         background: none !important;
-        -webkit-text-fill-color: #000000 !important;
+        -webkit-text-fill-color: var(--text-color) !important;
         margin-bottom: 5px;
     }
     .main-subtitle {
         font-size: 1.1rem;
-        color: #1A202C !important;
+        color: var(--text-color) !important;
         margin-bottom: 30px;
         font-weight: 400;
+        opacity: 0.85;
     }
     /* Completely hide the sidebar toggle control */
     [data-testid="collapsedControl"] {
