@@ -29,7 +29,7 @@ def scrape_profile_enrichment(profile_url: str, apify_token: str = None, scrapin
                 "type": "profile",
                 "id": linkedin_id
             }
-            response = requests.get("https://api.scrapingdog.com/linkedin", params=params, timeout=25)
+            response = requests.get("https://api.scrapingdog.com/profile", params=params, timeout=25)
             
             if response.status_code == 200:
                 logger.info("Successfully fetched profile data from Scrapingdog.")
