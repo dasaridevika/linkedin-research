@@ -132,6 +132,10 @@ if submitted:
                     lead_email=lead_email
                 )
                 
+                # Enforce the user-provided email in the final report results
+                if isinstance(results, dict):
+                    results['lead_email'] = lead_email
+                
                 # Stage 2
                 status.write("Synthesizing lead summaries with Gemini API...")
                 
