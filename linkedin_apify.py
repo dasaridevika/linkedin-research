@@ -21,11 +21,13 @@ def scrape_profile_enrichment(profile_url: str, apify_token: str = None, scrapin
     # 1. Try Scrapingdog
     if scrapingdog_key:
         try:
-            logger.info(f"Querying Scrapingdog for URL: {profile_url}")
+            # Extract LinkedIn username/ID from the URL
+            linkedin_id = profile_url.split("/in/")[-1].split("/")[0].split("?")[0]
+            logger.info(f"Querying Scrapingdog for ID: {linkedin_id}")
             params = {
                 "api_key": scrapingdog_key,
                 "type": "profile",
-                "url": profile_url
+                "id": linkedin_id
             }
             response = requests.get("https://api.scrapingdog.com/linkedin", params=params, timeout=25)
             
