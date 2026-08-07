@@ -76,10 +76,16 @@ def scrape_profile_enrichment(profile_url: str, apify_token: str = None, scrapin
     return {"error": "All enrichment integrations failed or keys were missing"}
 
 
-def _parse_scrapingdog_profile(raw_data: dict) -> dict:
+def _parse_scrapingdog_profile(raw_data) -> dict:
     """
     Parses Scrapingdog JSON response structure.
     """
+    if isinstance(raw_data, list):
+        if len(raw_data) > 0:
+            raw_data = raw_data[0]
+        else:
+            return {"error": "Empty dataset returned from Scrapingdog"}
+
     experiences = []
     # Scrapingdog usually returns list of experiences
     for exp in raw_data.get("experience", []):
